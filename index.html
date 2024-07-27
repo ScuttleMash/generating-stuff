@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="nl-BE">
+  <head>
+    <meta charset="utf-8" />
+    <title>Generating stuff</title>
+    <style>
+      body {
+        background-color: #dfdfdf;
+      }
+
+      .wrapper {
+        display: flex;
+      }
+
+      #steps {
+        flex: 1;
+      }
+
+      #display {
+        flex: 4;
+      }
+
+      #canvas {
+        background-color: rgb(0, 0, 0);
+
+        width: 1010px;
+        height: 610px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Running <span id="running">...</span></h1>
+    <div class="wrapper">
+      <list id="steps">
+        <!-- Rules are added in hud.js -->
+      </list>
+      <div id="display">
+        <canvas id="canvas"></canvas>
+      </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="models.js"></script>
+    <script src="grid.js"></script>
+    <script src="hud.js"></script>
+    <script src="canvas.js"></script>
+    <script src="simulation.js"></script>
+    <script src="main.js"></script>
+  </body>
+</html>
