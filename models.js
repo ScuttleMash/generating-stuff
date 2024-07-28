@@ -102,8 +102,8 @@ class PatternRule {
         return grid.process(target, this.action);
     }
 
-    target(grid) {
-        return this.predicate.test(grid);
+    target(grid, attempts) {
+        return this.predicate.test(grid, attempts);
     }
 
     getActiveRule() {
@@ -154,23 +154,31 @@ class Predicate {
         this.pattern = pattern;
     }
 
-    test(grid) {
-        const cells = grid.search(this.pattern);
+    test(grid, attempts) {
+        for (let attempt = 0; attempt < attempts; attempt++) {
+            const cells = grid.search(this.pattern);
 
-        if (cells.length != this.pattern.sequence.length) {
-            return new InvalidTarget();
+            if (cells.length == this.pattern.sequence.length) {
+                if (this.patternMatches(cells)) {
+                    return new ValidTarget(cells);
+                }
+            }
+
         }
+        return new InvalidTarget();
+    }
 
+    patternMatches(cells) {
         for (let index = 0; index < cells.length; index++) {
             if (cells[index] == undefined) {
-                return new InvalidTarget();
+                return false;
             }
 
             if (!this.pattern.sequence[index].wildcard && !cells[index].matches(this.pattern.sequence[index])) {
-                return new InvalidTarget();
+                return false;
             }
         }
-        return new ValidTarget(cells);
+        return true;
     }
 }
 

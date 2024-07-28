@@ -1,4 +1,4 @@
-const cellSize = 10;
+const cellSize = 20;
 const canvasId = "canvas";
 
 const properties = {
@@ -52,8 +52,8 @@ class Simulation {
                 this.applyOneRule();
             }
             this.canvas.flush();
-            updateRunningStateDisplay(this.active);
-            console.log(`Average updates per second: ${Math.floor(this.rulesAppliedCounter * 1000 / (performance.now() - this.startSimulation))}`);
+            // updateRunningStateDisplay(this.active);
+            // console.log(`Average updates per second: ${Math.floor(this.rulesAppliedCounter * 1000 / (performance.now() - this.startSimulation))}`);
             window.requestAnimationFrame(() => this.simulate());
         } else {
             console.log("No rule left to process. Stopping simulation.");
@@ -64,15 +64,15 @@ class Simulation {
         while (!this.rules.isTapped()) {
             const activeRule = this.rules.getActiveRule();
             // this.interface.activate(this.rules.getActiveIndex());
-            for (let attempts = 0; attempts < this.ruleAttempts; attempts++) {
-                const target = activeRule?.target(this.grid);
+            // for (let attempts = 0; attempts < this.ruleAttempts; attempts++) {
+                const target = activeRule?.target(this.grid, this.ruleAttempts);
                 if (target?.isValid()) {
                     const impacted = activeRule.apply(this.grid, target);
                     this.canvas.draw(impacted);
                     this.rulesAppliedCounter++;
                     return;
                 }
-            }
+            // }
 
             activeRule.tap();
             this.rules.goToNext();

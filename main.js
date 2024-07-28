@@ -45,9 +45,38 @@ const art =
         ])
     ]);
 
+// -------------------
+// ----- SOKOBAN -----
+// -------------------
+const SOKOBAN_START = new PatternRule(1, 3, new Predicate(new Pattern([BLACK], new Dimensions(1, 1))), new PatternAction(new Pattern([RED], new Dimensions(1, 1))), "SOKOBAN_START");
+const STARTING_BLOCKS = new PatternRule(2, 200, new Predicate(new Pattern([BLACK], new Dimensions(1, 1))), new PatternAction(new Pattern([GREEN], new Dimensions(1, 1))), "STARTING_BLOCKS");
+const BLOCK_PUSH = new PatternRule(3, -1, new Predicate(new Pattern([RED, GREEN, BLACK], new Dimensions(3, 1))), new PatternAction(new Pattern([BLACK, RED, GREEN], new Dimensions(3, 1))), "BLOCK_PUSH");
+const BLANK_MOVE = new PatternRule(3, -1, new Predicate(new Pattern([RED, BLACK], new Dimensions(2, 1))), new PatternAction(new Pattern([BLACK, RED], new Dimensions(2, 1))), "BLANK_MOVE");
+
+const sokoban = 
+    new SequentialRuleGroup([
+        SOKOBAN_START,
+        STARTING_BLOCKS,
+        BLOCK_PUSH,
+        BLANK_MOVE,
+    ]);
+
+
+// ---------------
+// ----- MAP -----
+// ---------------
+const MAP_START = new PatternRule(1, 3, new Predicate(new Pattern([BLACK], new Dimensions(1, 1))), new PatternAction(new Pattern([RED], new Dimensions(1, 1))), "SOKOBAN_START");
+
+const map = 
+    new SequentialRuleGroup([
+        MAP_START,
+    ]);
+
 // ---------------------------------------
 // ---------------------------------------
 
 const simulation = new Simulation();
 // simulation.start(maze);
 simulation.start(art);
+// simulation.start(sokoban);
+// simulation.start(map);
