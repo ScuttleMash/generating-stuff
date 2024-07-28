@@ -49,6 +49,13 @@ class WildcardItem extends PatternItem {
     }
 }
 
+class GridLocation {
+    constructor(column, row) {
+        this.column = column;
+        this.row = row;
+    }
+}
+
 class Dimensions {
     constructor(width, height) {
         this.width = width;
@@ -87,6 +94,7 @@ class PatternRule {
         this.action = action;
         this.name = name;
         this.depth = 0;
+        this.tapped = false;
     }
 
     apply(grid, target) {        
@@ -95,24 +103,15 @@ class PatternRule {
     }
 
     target(grid) {
-        const cells = grid.search(this.predicate.pattern);
-        if (this.predicate.test(cells)) {
-            return new ValidTarget(cells);
-        } else {
-            return new InvalidTarget();
-        }
+        return this.predicate.test(grid);
+    }
+
+    getActiveRule() {
+        return this;
     }
 
     getRulesAsArray() {
         return [this];
-    }
-
-    isTapped() {
-        return this.timesAllowed != -1 && this.timesUsed >= this.timesAllowed;
-    }
-
-    getNextRule() {
-        return this;
     }
 
     isGroup() {
@@ -130,6 +129,20 @@ class PatternRule {
     getDepth() {
         return this.depth;
     }
+
+    isTapped() {
+        return this.tapped || this.timesAllowed != -1 && this.timesUsed >= this.timesAllowed;
+    }
+
+    tap() {
+        this.tapped = true;
+    }
+
+    startOver() {
+        if (this.timesAllowed == -1) {
+            this.tapped = false;
+        }
+    }
 }
 
 // ==================================
@@ -141,21 +154,35 @@ class Predicate {
         this.pattern = pattern;
     }
 
-    test(cells) {
+    test(grid) {
+        const cells = grid.search(this.pattern);
+
         if (cells.length != this.pattern.sequence.length) {
-            return false;
+            return new InvalidTarget();
         }
 
         for (let index = 0; index < cells.length; index++) {
             if (cells[index] == undefined) {
-                return false;
+                return new InvalidTarget();
             }
 
             if (!this.pattern.sequence[index].wildcard && !cells[index].matches(this.pattern.sequence[index])) {
-                return false;
+                return new InvalidTarget();
             }
         }
-        return true;
+        return new ValidTarget(cells);
+    }
+}
+
+class LocationPredicate extends Predicate {
+    constructor(location, pattern) {
+        super(pattern);
+        this.location = location;
+    }
+
+    test(grid) {
+        const cells = [grid.getCell(this.location.column, this.location.row)];
+        return new ValidTarget(cells);
     }
 }
 
@@ -217,10 +244,6 @@ class RuleGroup {
         return this.ruleCount;
     }
 
-    getActiveRule() {
-        throw new Error("Implement me!");
-    }
-
     getRulesAsArray() {
         let result = [this];
         this.rules.forEach(rule => {
@@ -236,36 +259,60 @@ class RuleGroup {
         });
     }
 
-    isTapped() {
-        return false
-    }
-
     getDepth() {
         return this.depth;
+    }
+
+    isTapped() {
+        return this.rules.map(rule => rule.isTapped()).reduce((a, b) => a && b, true);
+    }
+
+    getActiveRule() {
+        let activeRule = this.rules[this.index];
+        while (activeRule.isTapped()) {
+            this.goToNext();
+            activeRule = this.rules[this.index];
+        }
+
+        if (activeRule.isGroup()) {
+            activeRule = activeRule.getActiveRule();
+        }
+        return activeRule;
     }
 }
 
 class RoundRobinRuleGroup extends RuleGroup {
     constructor(rules, name = "UNNAMED ROUND ROBIN RULEGROUP") {
         super(rules, name);
-        this.lastIndexUsed = 0;
+        this.index = Math.floor(Math.random() * rules.length);
     }
 
-    getNextRule(index) {
-        if (index > this.rules.length) {
-            return undefined;
+    goToNext() {
+        if (this.rules[this.index].isTapped()) {
+            this.index = (this.index + 1) % this.rules.length
         }
-        this.lastIndexUsed = (this.lastIndexUsed + 1) % this.rules.length
-        return this.rules[this.lastIndexUsed];
+    }
+
+    startOver() {
+        this.index = Math.floor(Math.random() * this.rules.length);
+        this.rules.forEach(rule => rule.startOver());
     }
 }
 
 class SequentialRuleGroup extends RuleGroup {
     constructor(rules, name = "UNNAMED SEQUENTIAL RULEGROUP") {
         super(rules, name);
+        this.index = 0;
     }
 
-    getNextRule(index) {
-        return this.rules[index];
+    goToNext() {
+        if (this.rules[this.index].isTapped()) {
+            this.index++;
+        }
+    }
+
+    startOver() {
+        this.index = 0;
+        this.rules.forEach(rule => rule.startOver());
     }
 }

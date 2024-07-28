@@ -18,6 +18,12 @@ class Grid {
         }
     }
 
+    reset() {
+        for (let index = 0; index < this.width * this.height; index++) {
+            this.cells[index] = new GridCell(1, Math.floor(index / this.width), index % this.width, new Colour(0, 0, 0));
+        }
+    }
+
     process(target, action) {
         let impacted = [];
         target.cells.forEach(cell => {

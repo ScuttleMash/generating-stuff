@@ -9,6 +9,11 @@ class Canvas {
         this.imageData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
     }
 
+    reset() {
+        this.ctx.reset();
+        this.imageData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
+    }
+
     draw(cells) {
         cells.forEach(cell => {
             this.colourCell(cell.column, cell.row, cell.colour);

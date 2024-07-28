@@ -1,5 +1,11 @@
-document.addEventListener('keyup', (e) => {
-    simulation.toggle();
+document.addEventListener('keypress', (e) => {
+    switch (e.key) {
+        case " ":
+            simulation.toggle();
+            return;
+        case "r":
+            simulation.restart();
+    }
 });
 
 function updateRunningStateDisplay(active) {
