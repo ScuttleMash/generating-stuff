@@ -2,15 +2,19 @@
 // =========== DATA ===========
 // ============================
 class Colour {
-    constructor(red, green, blue, alpha = 255) {
+    constructor(red, green, blue) {
         this.red = red;
         this.green = green;
         this.blue = blue;
-        this.alpha = alpha;
+        this.alpha = 255;
     }
 
     matches(colour) {
         return this.red == colour.red && this.green == colour.green && this.blue == colour.blue;
+    }
+
+    asRgb() {
+        return `RGB(${this.red}, ${this.green}, ${this.blue})`;
     }
 }
 
@@ -32,13 +36,16 @@ class Pattern {
 }
 
 class PatternItem {
-    constructor(colour, wildcard = 0) {
+    constructor(colour) {
         this.colour = colour;
-        this.wildcard = wildcard;
+        this.wildcard = false;
     }
+}
 
-    isWildcard() {
-        return this.wildcard == 1;
+class WildcardItem extends PatternItem {
+    constructor() {
+        super(new Colour(-1, -1, -1));
+        this.wildcard = true;
     }
 }
 
@@ -79,6 +86,7 @@ class PatternRule {
         this.predicate = predicate;
         this.action = action;
         this.name = name;
+        this.depth = 0;
     }
 
     apply(grid, target) {        
@@ -114,6 +122,14 @@ class PatternRule {
     getRuleCount() {
         return 1;
     }
+
+    setDepth(depth) {
+        this.depth = depth;
+    }
+
+    getDepth() {
+        return this.depth;
+    }
 }
 
 // ==================================
@@ -135,7 +151,7 @@ class Predicate {
                 return false;
             }
 
-            if (!this.pattern.sequence[index].isWildcard() && !cells[index].matches(this.pattern.sequence[index])) {
+            if (!this.pattern.sequence[index].wildcard && !cells[index].matches(this.pattern.sequence[index])) {
                 return false;
             }
         }
@@ -154,7 +170,7 @@ class Action {
 }
 
 class ColourAction extends Action {
-    constructor(colour) {
+    constructor(colour, dimensions) {
         super();
         this.colour = colour;
     }
@@ -174,7 +190,7 @@ class PatternAction extends Action {
     apply(cell) {
         this.currentTile = (this.currentTile + 1) % this.pattern.sequence.length;
         let patternItem = this.pattern.sequence[this.currentTile];
-        if (patternItem.isWildcard()) {
+        if (patternItem.wildcard) {
             return new ActionResult(cell.colour);
         }
         return new ActionResult(patternItem.colour);
@@ -190,6 +206,7 @@ class RuleGroup {
         this.rules = rules;    
         this.ruleCount = this.rules.map(rule => rule.getRuleCount()).reduce((x, y) => x + y, 1);
         this.name = name;
+        this.depth = 0;
     }
 
     isGroup() {
@@ -210,6 +227,21 @@ class RuleGroup {
             result.push(...rule.getRulesAsArray());
         });
         return result;
+    }
+
+    setDepth(depth) {
+        this.depth = depth;
+        this.rules.forEach(rule => {
+            rule.setDepth(depth + 1);
+        });
+    }
+
+    isTapped() {
+        return false
+    }
+
+    getDepth() {
+        return this.depth;
     }
 }
 

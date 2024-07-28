@@ -23,7 +23,7 @@ class Simulation {
     }
 
     start(rules) {
-        this.interface = new Interface(maze);
+        this.interface = new Interface(rules);
         this.startSimulation = performance.now();
         this.rules = new Rules(rules);
         this.active = true;
@@ -43,6 +43,7 @@ class Simulation {
                 this.applyOneRule();
             }
             this.canvas.flush();
+            updateRunningStateDisplay(this.active);
             // console.log(`Average updates per second: ${Math.floor(this.rulesAppliedCounter * 1000 / (performance.now() - this.startSimulation))}`);
             window.requestAnimationFrame(() => this.simulate());
         } else {
@@ -84,10 +85,11 @@ class Rules {
     }
 
     getActiveRule() {
-        while (this.activeRule != undefined && this.activeRule.isTapped()) {
+        while (this.activeRule != undefined && (this.activeRule.isTapped() || this.activeRule.isGroup())) {
             this.activeRuleIndex++;
             this.activeRule = this.rules.getNextRule(this.activeRuleIndex);    
         }
+
         return this.activeRule;
     }
 

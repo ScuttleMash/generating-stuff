@@ -5,7 +5,7 @@
     <title>Generating stuff</title>
     <style>
       body {
-        background-color: #dfdfdf;
+        background-color: #4d4d4d;
       }
 
       .wrapper {
@@ -14,6 +14,34 @@
 
       #steps {
         flex: 1;
+        
+        display: flex;
+        flex-direction: column;
+
+        row-gap: 10px;
+      }
+
+      .step {
+        display: flex;
+        flex-direction: row;
+        
+        column-gap: 10px;
+      }
+
+      .step-depth-0 {
+        margin-left: 0px;
+      }
+
+      .step-depth-1 {
+        margin-left: 10px;
+      }
+
+      .step-depth-2 {
+        margin-left: 20px;
+      }
+
+      .step-depth-3 {
+        margin-left: 30px;
       }
 
       #display {
@@ -29,11 +57,11 @@
     </style>
   </head>
   <body>
-    <h1>Running <span id="running">...</span></h1>
+    <h2 id="running">Running...</h2>
     <div class="wrapper">
-      <list id="steps">
+      <div id="steps">
         <!-- Rules are added in hud.js -->
-      </list>
+      </div>
       <div id="display">
         <canvas id="canvas"></canvas>
       </div>
