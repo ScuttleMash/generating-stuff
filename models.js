@@ -24,31 +24,6 @@ class ActionResult {
     }
 }
 
-class Pattern {
-    constructor(sequence, dimensions) {
-        if (sequence.length != dimensions.height * dimensions.width) {
-            console.error("Invalid pattern! ", sequence, dimensions);
-        }
-
-        this.sequence = sequence;
-        this.dimensions = dimensions;
-    }
-}
-
-class PatternItem {
-    constructor(colour) {
-        this.colour = colour;
-        this.wildcard = false;
-    }
-}
-
-class WildcardItem extends PatternItem {
-    constructor() {
-        super(new Colour(-1, -1, -1));
-        this.wildcard = true;
-    }
-}
-
 class GridLocation {
     constructor(column, row) {
         this.column = column;
@@ -81,14 +56,64 @@ class InvalidTarget {
     }
 }
 
+// ================================
+// =========== PATTERNS ===========
+// ================================
+
+class Pattern {
+    constructor(sequence, dimensions) {
+        if (sequence.length != dimensions.height * dimensions.width) {
+            console.error("Invalid pattern! ", sequence, dimensions);
+        }
+
+        this.sequence = sequence;
+        this.dimensions = dimensions;
+    }
+}
+
+class LinePattern extends Pattern {
+    constructor(sequence) {
+        super(sequence, new Dimensions(sequence.length, 1));
+    }
+}
+
+class SingleCellPattern extends Pattern {
+    constructor(patternItem) {
+        super([patternItem], new Dimensions(1, 1));
+    }
+}
+
+class ColourBlockPattern extends Pattern {
+    constructor(colour, dimensions) {
+        let sequence = [];
+        for (let index = 0; index < dimensions.width * dimensions.height; index++) {
+            sequence.push(colour);
+        }
+        super(sequence, dimensions);
+    }
+}
+
+class PatternItem {
+    constructor(colour) {
+        this.colour = colour;
+        this.wildcard = false;
+    }
+}
+
+class WildcardItem extends PatternItem {
+    constructor() {
+        super(new Colour(-1, -1, -1));
+        this.wildcard = true;
+    }
+}
+
+
 // =============================
 // =========== RULES ===========
 // =============================
 
-class PatternRule {
-    constructor(identifier, timesAllowed, predicate, action, name = "UNNAMED RULE") {
-        this.identifier = identifier;
-        this.timesAllowed = timesAllowed;
+class Rule {
+    constructor(predicate, action) {
         this.timesUsed = 0;
         this.predicate = predicate;
         this.action = action;
@@ -97,13 +122,13 @@ class PatternRule {
         this.tapped = false;
     }
 
+    target(grid, attempts) {
+        return this.predicate.test(grid, attempts);
+    }
+
     apply(grid, target) {        
         this.timesUsed++;
         return grid.process(target, this.action);
-    }
-
-    target(grid, attempts) {
-        return this.predicate.test(grid, attempts);
     }
 
     getActiveRule() {
@@ -131,17 +156,34 @@ class PatternRule {
     }
 
     isTapped() {
-        return this.tapped || this.timesAllowed != -1 && this.timesUsed >= this.timesAllowed;
+        return this.tapped;
     }
 
     tap() {
         this.tapped = true;
     }
 
+    untap() {
+        this.tapped = false;
+    }
+
     startOver() {
-        if (this.timesAllowed == -1) {
-            this.tapped = false;
-        }
+        this.tapped = false;
+    }
+}
+
+class LimitedRule extends Rule {
+    constructor(limit, predicate, action) {
+        super(predicate, action);
+        this.limit = limit;
+    }
+
+    isTapped() {
+        return this.timesUsed >= this.limit;
+    }
+
+    untap() {
+        this.timesUsed = 0;
     }
 }
 
@@ -157,13 +199,11 @@ class Predicate {
     test(grid, attempts) {
         for (let attempt = 0; attempt < attempts; attempt++) {
             const cells = grid.search(this.pattern);
-
             if (cells.length == this.pattern.sequence.length) {
                 if (this.patternMatches(cells)) {
                     return new ValidTarget(cells);
                 }
             }
-
         }
         return new InvalidTarget();
     }
@@ -173,7 +213,6 @@ class Predicate {
             if (cells[index] == undefined) {
                 return false;
             }
-
             if (!this.pattern.sequence[index].wildcard && !cells[index].matches(this.pattern.sequence[index])) {
                 return false;
             }
@@ -182,7 +221,7 @@ class Predicate {
     }
 }
 
-class LocationPredicate extends Predicate {
+class FixedLocationPredicate extends Predicate {
     constructor(location, pattern) {
         super(pattern);
         this.location = location;
@@ -199,25 +238,7 @@ class LocationPredicate extends Predicate {
 // ===============================
 
 class Action {
-    apply(cell) {
-        throw new Error("Implement me!");
-    }
-}
-
-class ColourAction extends Action {
-    constructor(colour, dimensions) {
-        super();
-        this.colour = colour;
-    }
-
-    apply(cell) {
-        return new ActionResult(this.colour);
-    }
-}
-
-class PatternAction extends Action {
     constructor(pattern) {
-        super();
         this.pattern = pattern;
         this.currentTile = -1;
     }
@@ -287,12 +308,16 @@ class RuleGroup {
         }
         return activeRule;
     }
+
+    untap() {
+        this.rules.forEach(rule => rule.untap());
+    }
 }
 
 class RoundRobinRuleGroup extends RuleGroup {
     constructor(rules, name = "UNNAMED ROUND ROBIN RULEGROUP") {
         super(rules, name);
-        this.index = Math.floor(Math.random() * rules.length);
+        this.index = random(rules.length);
     }
 
     goToNext() {
@@ -302,7 +327,7 @@ class RoundRobinRuleGroup extends RuleGroup {
     }
 
     startOver() {
-        this.index = Math.floor(Math.random() * this.rules.length);
+        this.index = random(this.rules.length);
         this.rules.forEach(rule => rule.startOver());
     }
 }

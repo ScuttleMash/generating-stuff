@@ -14,14 +14,12 @@ class Grid {
 
     initialize() {
         for (let index = 0; index < this.width * this.height; index++) {
-            this.cells[index] = new GridCell(1, Math.floor(index / this.width), index % this.width, new Colour(0, 0, 0));
+            this.cells[index] = new GridCell(Math.floor(index / this.width), index % this.width, new Colour(0, 0, 0));
         }
     }
 
     reset() {
-        for (let index = 0; index < this.width * this.height; index++) {
-            this.cells[index] = new GridCell(1, Math.floor(index / this.width), index % this.width, new Colour(0, 0, 0));
-        }
+        this.initialize();
     }
 
     process(target, action) {
@@ -89,7 +87,7 @@ class Grid {
                     }
                 }
                 const validDirections = directions.flatMap((bool, index) => bool ? index : []);
-                const chosenDirection = validDirections[Math.floor(Math.random() * validDirections.length)];
+                const chosenDirection = validDirections[random(validDirections.length)];
                 switch (chosenDirection) {
                     case Grid.UP:
                         return upCells;
@@ -109,7 +107,7 @@ class Grid {
     }
 
     getRandomCell() {
-        return this.getCell(this.random(this.width), this.random(this.height));
+        return this.getCell(random(this.width), random(this.height));
     }
 
     getCell(column, row) {
@@ -118,15 +116,10 @@ class Grid {
         }
         return this.cells[row * this.width + column];
     }
-
-    random(max) {
-        return Math.floor(Math.random() * max);
-    }
 }
 
 class GridCell {
-    constructor(identifier, row, column, colour) { 
-        this.identifier = identifier;
+    constructor(row, column, colour) { 
         this.row = row;
         this.column = column;
         this.colour = colour;

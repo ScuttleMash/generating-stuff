@@ -3,6 +3,7 @@ const ANY = new WildcardItem();
 
 // Colours
 const BLACK = new PatternItem(new Colour(0, 0, 0));
+const GRAY = new PatternItem(new Colour(50, 50, 50));
 const WHITE = new PatternItem(new Colour(255, 255, 255));
 const RED = new PatternItem(new Colour(255, 0, 0));
 const GREEN = new PatternItem(new Colour(0, 255, 0));
@@ -12,31 +13,47 @@ const YELLOW = new PatternItem(new Colour(0, 255, 255));
 // ----------------
 // ----- MAZE -----
 // ----------------
-const MAZE_START = new PatternRule(1, 1, new LocationPredicate(new GridLocation(3, 1), new Pattern([BLACK], new Dimensions(1, 1))), new PatternAction(new Pattern([RED], new Dimensions(1, 1))), "MAZE_START");
-const WALL_BUILDER = new PatternRule(2, -1, new Predicate(new Pattern([RED, BLACK, BLACK], new Dimensions(3, 1))), new PatternAction(new Pattern([WHITE, WHITE, RED], new Dimensions(3, 1))), "WALL_BUILDER");
-const MAZE_SOLVER = new PatternRule(3, -1, new Predicate(new Pattern([RED, WHITE, WHITE], new Dimensions(3, 1))), new PatternAction(new Pattern([GREEN, GREEN, RED], new Dimensions(3, 1))), "MAZE_SOLVER");
+const MAZE_START = new LimitedRule(1, new FixedLocationPredicate(new GridLocation(1, 1), new SingleCellPattern(BLACK)), new Action(new SingleCellPattern(RED)));
+const MAZE_BUILD_WALL = new Rule(new Predicate(new LinePattern([RED, BLACK, BLACK])), new Action(new LinePattern([WHITE, WHITE, RED])));
+const MAZE_TRACK_BACK = new Rule(new Predicate(new LinePattern([RED, WHITE, WHITE])), new Action(new LinePattern([GREEN, GREEN, RED])));
 
 const maze = 
     new SequentialRuleGroup([
         MAZE_START,
-        WALL_BUILDER,
-        MAZE_SOLVER,
+        MAZE_BUILD_WALL,
+        MAZE_TRACK_BACK,
     ]);
 
 // ---------------
 // ----- Art -----
 // ---------------
-const ART_START = new PatternRule(1, 1, new LocationPredicate(new GridLocation(1, 1), new Pattern([BLACK], new Dimensions(1, 1))), new PatternAction(new Pattern([RED], new Dimensions(1, 1))), "ART_START");
-const GRID_BUILDER = new PatternRule(2, -1, new Predicate(new Pattern([RED, BLACK, BLACK], new Dimensions(3, 1))), new PatternAction(new Pattern([RED, BLACK, RED], new Dimensions(3, 1))), "GRID_BUILDER");
-const ART_PATTERN_1 = new PatternRule(3, -1, new Predicate(new Pattern([RED, BLACK, RED, BLACK, BLACK, BLACK, RED, BLACK, RED], new Dimensions(3, 3))), new PatternAction(new Pattern([GREEN, GREEN, GREEN, GREEN, GREEN, GREEN, GREEN, GREEN, GREEN], new Dimensions(3, 3))), "ART_PATTERN_1");
-const ART_PATTERN_2 = new PatternRule(4, -1, new Predicate(new Pattern([RED, BLACK, RED, BLACK, RED, BLACK, BLACK, BLACK, BLACK, BLACK, RED, BLACK, RED, BLACK, RED], new Dimensions(5, 3))), new PatternAction(new Pattern([BLUE, BLUE, BLUE, BLUE, BLUE, BLUE, BLUE, BLUE, BLUE, BLUE, BLUE, BLUE, BLUE, BLUE, BLUE], new Dimensions(5, 3))), "ART_PATTERN_2");
-const ART_PATTERN_3 = new PatternRule(5, -1, new Predicate(new Pattern([RED, BLACK, RED, BLACK, BLACK, BLACK, RED, BLACK, RED, BLACK, BLACK, BLACK, RED, BLACK, RED], new Dimensions(3, 5))), new PatternAction(new Pattern([YELLOW, YELLOW, YELLOW, YELLOW, YELLOW, YELLOW, YELLOW, YELLOW, YELLOW, YELLOW, YELLOW, YELLOW, YELLOW, YELLOW, YELLOW], new Dimensions(3, 5))), "ART_PATTERN_3");
-const ART_PATTERN_4 = new PatternRule(6, -1, new Predicate(new Pattern([RED, BLACK, RED, BLACK, RED, BLACK, BLACK, BLACK, BLACK, BLACK, RED, BLACK, RED, BLACK, RED, BLACK, BLACK, BLACK, BLACK, BLACK, RED, BLACK, RED, BLACK, RED], new Dimensions(5, 5))), new PatternAction(new Pattern([WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE], new Dimensions(5, 5))), "ART_PATTERN_4");
+const ART_START = new LimitedRule(1, new FixedLocationPredicate(new GridLocation(1, 1), new SingleCellPattern(BLACK)), new Action(new SingleCellPattern(RED)));
+const ART_BUILD_GRID = new Rule(new Predicate(new LinePattern([RED, BLACK, BLACK])), new Action(new LinePattern([RED, BLACK, RED])));
+const ART_PATTERN_1 = new Rule(new Predicate(new Pattern([RED, BLACK, RED, 
+                                                          BLACK, BLACK, BLACK, 
+                                                          RED, BLACK, RED], new Dimensions(3, 3))), 
+                               new Action(new ColourBlockPattern(GREEN, new Dimensions(3, 3))));
+const ART_PATTERN_2 = new Rule(new Predicate(new Pattern([RED, BLACK, RED, BLACK, RED, 
+                                                          BLACK, BLACK, BLACK, BLACK, BLACK, 
+                                                          RED, BLACK, RED, BLACK, RED], new Dimensions(5, 3))), 
+                               new Action(new ColourBlockPattern(BLUE, new Dimensions(5, 3))));
+const ART_PATTERN_3 = new Rule(new Predicate(new Pattern([RED, BLACK, RED, 
+                                                          BLACK, BLACK, BLACK, 
+                                                          RED, BLACK, RED, 
+                                                          BLACK, BLACK, BLACK, 
+                                                          RED, BLACK, RED], new Dimensions(3, 5))), 
+                               new Action(new ColourBlockPattern(YELLOW, new Dimensions(3, 5))));
+const ART_PATTERN_4 = new Rule(new Predicate(new Pattern([RED, BLACK, RED, BLACK, RED, 
+                                                          BLACK, BLACK, BLACK, BLACK, BLACK, 
+                                                          RED, BLACK, RED, BLACK, RED, 
+                                                          BLACK, BLACK, BLACK, BLACK, BLACK, 
+                                                          RED, BLACK, RED, BLACK, RED], new Dimensions(5, 5))), 
+                               new Action(new ColourBlockPattern(WHITE, new Dimensions(5, 5))));
 
 const art =
     new SequentialRuleGroup([
         ART_START,
-        GRID_BUILDER,
+        ART_BUILD_GRID,
         new RoundRobinRuleGroup([
             ART_PATTERN_1,
             ART_PATTERN_2,
@@ -48,35 +65,57 @@ const art =
 // -------------------
 // ----- SOKOBAN -----
 // -------------------
-const SOKOBAN_START = new PatternRule(1, 3, new Predicate(new Pattern([BLACK], new Dimensions(1, 1))), new PatternAction(new Pattern([RED], new Dimensions(1, 1))), "SOKOBAN_START");
-const STARTING_BLOCKS = new PatternRule(2, 200, new Predicate(new Pattern([BLACK], new Dimensions(1, 1))), new PatternAction(new Pattern([GREEN], new Dimensions(1, 1))), "STARTING_BLOCKS");
-const BLOCK_PUSH = new PatternRule(3, -1, new Predicate(new Pattern([RED, GREEN, BLACK], new Dimensions(3, 1))), new PatternAction(new Pattern([BLACK, RED, GREEN], new Dimensions(3, 1))), "BLOCK_PUSH");
-const BLANK_MOVE = new PatternRule(3, -1, new Predicate(new Pattern([RED, BLACK], new Dimensions(2, 1))), new PatternAction(new Pattern([BLACK, RED], new Dimensions(2, 1))), "BLANK_MOVE");
+const SOKOBAN_START = new LimitedRule(3, new Predicate(new SingleCellPattern(BLACK)), new Action(new SingleCellPattern(RED)));
+const SOKOBAN_START_2 = new LimitedRule(400, new Predicate(new SingleCellPattern(BLACK)), new Action(new SingleCellPattern(GREEN)));
+const SOKOBAN_PUSH_BLOCK = new Rule(new Predicate(new LinePattern([RED, GREEN, BLACK])), new Action(new LinePattern([BLACK, RED, GREEN])));
+const SOKOBAN_MOVE_PUSHER = new Rule(new Predicate(new LinePattern([RED, BLACK])), new Action(new LinePattern([BLACK, RED])));
 
 const sokoban = 
     new SequentialRuleGroup([
         SOKOBAN_START,
-        STARTING_BLOCKS,
-        BLOCK_PUSH,
-        BLANK_MOVE,
+        SOKOBAN_START_2,
+        SOKOBAN_PUSH_BLOCK,
+        SOKOBAN_MOVE_PUSHER,
     ]);
 
 
-// ---------------
-// ----- MAP -----
-// ---------------
-const MAP_START = new PatternRule(1, 3, new Predicate(new Pattern([BLACK], new Dimensions(1, 1))), new PatternAction(new Pattern([RED], new Dimensions(1, 1))), "SOKOBAN_START");
+// ------------------
+// ----- PACMAN -----
+// ------------------
+const PACMAN_START = new LimitedRule(1, new FixedLocationPredicate(new GridLocation(1, 1), new SingleCellPattern(BLACK)), new Action(new SingleCellPattern(GRAY)));
+const PACMAN_CREATE_GRID = new Rule(new Predicate(new LinePattern([GRAY, BLACK, BLACK])), new Action(new LinePattern([GRAY, BLACK, GRAY])));
+const PACMAN_SPAWN_PACMAN = new LimitedRule(1, new FixedLocationPredicate(new GridLocation(1, 1), new SingleCellPattern(BLACK)), new Action(new SingleCellPattern(YELLOW)));
+const PACMAN_SPAWN_GHOST = new LimitedRule(3, new Predicate(new SingleCellPattern(BLACK)), new Action(new SingleCellPattern(RED)));
+const PACMAN_ADD_DOTS = new LimitedRule(10, new Predicate(new SingleCellPattern(BLACK)), new Action(new SingleCellPattern(WHITE)));
+// const PACMAN_CHECK_VICTORY = 
+const PACMAN_CHECK_DEATH = new Rule(new Predicate(new LinePattern([YELLOW, RED])), new Action(new LinePattern([RED, BLACK])));
+const PACMAN_CONSUME_DOT = new Rule(new Predicate(new LinePattern([YELLOW, WHITE])), new Action(new LinePattern([BLACK, YELLOW])));
+const PACMAN_MOVE_PACMAN = new Rule(new Predicate(new LinePattern([YELLOW, BLACK])), new Action(new LinePattern([BLACK, YELLOW])));
+const PACMAN_MOVE_GHOST = new Rule(new Predicate(new LinePattern([RED, BLACK])), new Action(new LinePattern([BLACK, RED])));
 
-const map = 
+const pacman = 
     new SequentialRuleGroup([
-        MAP_START,
+        PACMAN_START,
+        PACMAN_CREATE_GRID,
+        PACMAN_SPAWN_PACMAN,
+        PACMAN_SPAWN_GHOST,
+        PACMAN_ADD_DOTS,
+        PACMAN_CHECK_DEATH,
+        PACMAN_CONSUME_DOT,
+        new RoundRobinRuleGroup([
+            PACMAN_MOVE_PACMAN,
+            PACMAN_MOVE_GHOST
+        ])
     ]);
 
 // ---------------------------------------
 // ---------------------------------------
-
+// console.profile();
 const simulation = new Simulation();
 // simulation.start(maze);
-simulation.start(art);
+// simulation.start(art);
 // simulation.start(sokoban);
-// simulation.start(map);
+simulation.start(pacman);
+// setTimeout(() => {
+    // console.profileEnd();
+// }, 20000);

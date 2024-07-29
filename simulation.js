@@ -14,6 +14,10 @@ const properties = {
 
 class Simulation {
     constructor() {
+        this.initialize();
+    }
+
+    initialize() {
         this.rulesAppliedCounter = 0;
         this.active = false;
         this.changesPerFrame = properties.changesPerFrame;
@@ -24,17 +28,15 @@ class Simulation {
 
     start(rules) {
         this.interface = new Interface(rules);
-        this.startSimulation = performance.now();
         this.rules = rules;
         this.active = true;
         this.simulate();
     }
 
     restart() {
-        this.startSimulation = performance.now();
-        this.rulesAppliedCounter = 0;
-        this.canvas.reset();
-        this.grid.reset();
+        this.initialize();
+        this.rules.untap();
+        this.active = true;
         this.simulate();
     }
 
@@ -52,11 +54,8 @@ class Simulation {
                 this.applyOneRule();
             }
             this.canvas.flush();
-            // updateRunningStateDisplay(this.active);
-            // console.log(`Average updates per second: ${Math.floor(this.rulesAppliedCounter * 1000 / (performance.now() - this.startSimulation))}`);
+            updateRunningStateDisplay(this.active);
             window.requestAnimationFrame(() => this.simulate());
-        } else {
-            console.log("No rule left to process. Stopping simulation.");
         }
     }
 
@@ -64,15 +63,13 @@ class Simulation {
         while (!this.rules.isTapped()) {
             const activeRule = this.rules.getActiveRule();
             // this.interface.activate(this.rules.getActiveIndex());
-            // for (let attempts = 0; attempts < this.ruleAttempts; attempts++) {
-                const target = activeRule?.target(this.grid, this.ruleAttempts);
-                if (target?.isValid()) {
-                    const impacted = activeRule.apply(this.grid, target);
-                    this.canvas.draw(impacted);
-                    this.rulesAppliedCounter++;
-                    return;
-                }
-            // }
+            const target = activeRule?.target(this.grid, this.ruleAttempts);
+            if (target?.isValid()) {
+                const impacted = activeRule.apply(this.grid, target);
+                this.canvas.draw(impacted);
+                this.rulesAppliedCounter++;
+                return;
+            }
 
             activeRule.tap();
             this.rules.goToNext();
